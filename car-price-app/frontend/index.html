@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Car Price Estimator</title>
+
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #ffffff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-top: 14px;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        input::placeholder {
+            color: #aaa;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 30px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #1e4fd8;
+        }
+
+        .result {
+            margin-top: 35px;
+            padding: 20px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .price {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .range {
+            margin-bottom: 10px;
+        }
+
+        .confidence {
+            font-weight: 600;
+        }
+
+        .confidence.high { color: #16a34a; }
+        .confidence.medium { color: #f59e0b; }
+        .confidence.low { color: #dc2626; }
+
+        .optional {
+            font-size: 12px;
+            color: #888;
+            font-weight: normal;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Car Price Estimator</h1>
+    <p class="subtitle">Estimate a fair market price based on vehicle characteristics</p>
+
+    <form id="carForm">
+
+        <label>Year</label>
+        <input type="number" id="Year" value="2018">
+
+        <label>Engine HP <span class="optional">(optional)</span></label>
+        <input type="number" id="Engine_HP" placeholder="e.g. 150">
+
+        <label>Engine Cylinders <span class="optional">(optional)</span></label>
+        <input type="number" id="Engine_Cylinders" placeholder="e.g. 4">
+
+        <label>Number of Doors <span class="optional">(optional)</span></label>
+        <input type="number" id="Number_of_Doors" placeholder="e.g. 4">
+
+        <label>Highway MPG <span class="optional">(optional)</span></label>
+        <input type="number" id="highway_MPG" placeholder="e.g. 40">
+
+        <label>City MPG <span class="optional">(optional)</span></label>
+        <input type="number" id="city_mpg" placeholder="e.g. 30">
+
+        <label>Popularity <span class="optional">(optional)</span></label>
+        <input type="number" id="Popularity" placeholder="e.g. 1200">
+
+        <label>Make</label>
+        <select id="Make">
+            <option>Toyota</option>
+            <option>Volkswagen</option>
+            <option>Ford</option>
+            <option>BMW</option>
+        </select>
+
+        <label>Model</label>
+        <input type="text" id="Model" value="Corolla">
+
+        <label>Engine Fuel Type</label>
+        <select id="Engine_Fuel_Type">
+            <option>regular unleaded</option>
+            <option>premium unleaded</option>
+            <option>diesel</option>
+        </select>
+
+        <label>Transmission Type</label>
+        <select id="Transmission_Type">
+            <option>AUTOMATIC</option>
+            <option>MANUAL</option>
+        </select>
+
+        <label>Driven Wheels</label>
+        <select id="Driven_Wheels">
+            <option>front wheel drive</option>
+            <option>rear wheel drive</option>
+            <option>all wheel drive</option>
+        </select>
+
+        <label>Vehicle Size</label>
+        <select id="Vehicle_Size">
+            <option>Compact</option>
+            <option>Midsize</option>
+            <option>Large</option>
+        </select>
+
+        <label>Vehicle Style</label>
+        <select id="Vehicle_Style">
+            <option>Sedan</option>
+            <option>SUV</option>
+            <option>Coupe</option>
+        </select>
+
+        <button type="submit">Estimate price</button>
+
+    </form>
+
+    <div class="result" id="result" style="display:none;"></div>
+
+</div>
+
+<script>
+document.getElementById("carForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const getValue = (el) => el.value ? +el.value : null;
+
+    const data = {
+        Year: +Year.value,
+        Engine_HP: getValue(Engine_HP),
+        Engine_Cylinders: getValue(Engine_Cylinders),
+        Number_of_Doors: getValue(Number_of_Doors),
+        highway_MPG: getValue(highway_MPG),
+        city_mpg: getValue(city_mpg),
+        Popularity: getValue(Popularity),
+
+        Make: Make.value,
+        Model: Model.value,
+        Engine_Fuel_Type: Engine_Fuel_Type.value,
+        Transmission_Type: Transmission_Type.value,
+        Driven_Wheels: Driven_Wheels.value,
+        Vehicle_Size: Vehicle_Size.value,
+        Vehicle_Style: Vehicle_Style.value
+    };
+
+    const response = await fetch("http://127.0.0.1:8000/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+
+    const confidenceClass = result.confidence_level;
+
+    document.getElementById("result").style.display = "block";
+    document.getElementById("result").innerHTML = `
+        <div class="price">Estimated price: €${result.predicted_price}</div>
+        <div class="range">Estimated range: €${result.price_min} – €${result.price_max}</div>
+        <div class="confidence ${confidenceClass}">
+            Confidence level: ${result.confidence_level}
+        </div>
+    `;
+});
+</script>
+
+</body>
+</html>
